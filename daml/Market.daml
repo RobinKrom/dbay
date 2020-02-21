@@ -1,0 +1,473 @@
+daml 1.2
+
+
+module Market where
+
+import DA.Date
+import DA.List
+import Daml.Script
+import Prelude hiding (submit, submitMustFail)
+import DA.Foldable (forA_)
+import qualified Daml.Trigger as T
+import qualified DA.Next.Map as M
+
+data Stars
+  = OneStar
+  | TwoStars
+  | ThreeStars
+  | FourStars
+  | FiveStars
+  deriving (Eq, Show)
+
+template OpenRating
+  with
+    user : Party
+    buyer : Party
+    title : Text
+    all : [Party]
+  where
+    signatory user
+
+    nonconsuming choice Rate : ()
+      with
+        stars : Stars
+        experience : Text
+      controller buyer
+          do
+            create $ Rating title user stars experience buyer all
+            archive self
+
+template Rating
+  with
+    title: Text
+    user : Party
+    stars : Stars
+    experience : Text
+    rater : Party
+    all : [Party]
+  where
+    signatory rater
+    observer all
+
+template User
+  with
+    party : Party
+    email : Text
+    all : [Party]
+  where
+    signatory party
+    key party : Party
+    maintainer key
+
+    nonconsuming choice NewOffer : ()
+      with
+        observers : [Party]
+        title : Text
+        description : Text
+        photoLink : Text
+        price : Int
+        currency : Currency
+        period : Period
+      controller party
+        do
+          now <- getTime
+          create $ Offer {seller = party, date = toDateUTC now, ..}
+          pure ()
+
+    nonconsuming choice NewChannelOffer : ()
+      with
+        channel : ChannelKey
+        title : Text
+        description : Text
+        photoLink : Text
+        price : Int
+        currency : Currency
+        period : Period
+      controller party
+        do
+          (chCid, Channel{chSubscribers, chKicked}) <- fetchByKey @Channel channel
+          assert $ party `notElem` chKicked
+          exerciseByKey @User party $ NewOffer {observers = chSubscribers, ..}
+          pure ()
+
+    nonconsuming choice TakeOffer : ()
+      with
+        offer : ContractId Offer
+      controller party
+        do
+          exercise offer DoTrade with tradePartner = party
+          pure ()
+
+    nonconsuming choice ConfirmPayment : ()
+      with
+        invoice : ContractId Invoice
+      controller party
+        do
+          Invoice{..} <- fetch invoice
+          assert $ owner == party
+          create $ PaymentConfirmation
+                      with
+                        pcInvoice = invoice
+                        pcParty = party
+                        pcObligor = obligor
+          pure ()
+
+    nonconsuming choice CancelRecurringInvoice : ()
+      with
+        recInvoice : ContractId RecurringInvoice
+      controller party
+        do
+          RecurringInvoice{..} <- fetch recInvoice
+          assert $ invoice.owner == party
+          archive recInvoice
+          pure ()
+
+    nonconsuming choice CreateChannel : ()
+      with
+        key : Text
+        description : Text
+      controller party
+        do
+          create $ Channel
+                    with
+                      chOperator = party
+                      chKey = (party, key)
+                      chObservers = all
+                      chSubscribers = []
+                      chKicked = []
+                      chDescription = description
+          pure ()
+
+    nonconsuming choice SubscribeToChannel : ()
+      with
+        channelKey : ChannelKey
+      controller party
+        do
+          exerciseByKey @Channel channelKey Subscribe with subscriber = party
+
+    nonconsuming choice UnsubscribeFromChannel : ()
+      with
+        channelKey : ChannelKey
+      controller party
+        do
+          exerciseByKey @Channel channelKey Unsubscribe with subscriber = party
+
+type ChannelKey = (Party, Text)
+template Channel
+  with
+    chOperator : Party
+    chKey : ChannelKey
+    chObservers : [Party]
+    chSubscribers : [Party]
+    chKicked : [Party]
+    chDescription : Text
+  where
+    signatory chOperator
+    observer (chObservers ++ chSubscribers)
+    key chKey : ChannelKey
+    maintainer fst key
+
+    nonconsuming choice Subscribe : ()
+      with
+        subscriber : Party
+      controller subscriber
+        do
+          let Channel{..} = this
+          archive self
+          create $ Channel{chSubscribers = subscriber :: chSubscribers, ..}
+          pure ()
+
+    nonconsuming choice  Unsubscribe : ()
+      with
+        subscriber : Party
+      controller subscriber
+          do
+            archive self
+            create this with chSubscribers = filter (/= subscriber) chSubscribers
+            pure ()
+
+    nonconsuming choice Kick : ()
+      with
+        party : Party
+      controller chOperator
+        do
+          create $ this with chKicked = party::chKicked
+          pure ()
+
+template Offer
+  with
+    observers : [Party]
+    title : Text
+    description : Text
+    photoLink : Text
+    price : Int
+    period : Period
+    currency : Currency
+    seller : Party
+    date : Date
+    all : [Party]
+  where
+    signatory seller
+    observer observers
+
+    nonconsuming choice DoTrade : ()
+      with
+        tradePartner : Party
+      controller tradePartner
+        do
+          assert $ tradePartner `elem` observers
+          archive self
+          now <- toDateUTC <$> getTime
+          let invoice = Invoice { owner = seller
+                                , obligor = tradePartner
+                                , amount = price
+                                , currency = currency
+                                , description = title
+                                , date = now
+                                }
+          case period of
+                  Once -> do
+                    create invoice
+                    pure ()
+                  _reoccuring -> do
+                      create $ RecurringInvoice
+                               { invoice = invoice
+                               , period = period
+                               , start = now
+                               , issued = -1 -- we start with -1 so that the first invoice is
+                                             -- issued immidiatly
+                               }
+                      pure ()
+          create $ OpenRating seller tradePartner title all
+          pure ()
+
+template Invoice
+  with
+    owner : Party
+    obligor : Party
+    amount : Int
+    date : Date
+    currency : Currency
+    description : Text
+  where
+    signatory obligor
+    observer owner
+
+template RecurringInvoice
+  with
+    invoice : Invoice
+    period : Period
+    start : Date
+    issued : Int
+  where
+    signatory invoice.obligor
+    observer invoice.owner
+
+    nonconsuming choice NewInvoice : ()
+      controller invoice.owner
+      do
+        now <- getTime
+        let today = toDateUTC now
+        let timeSinceStart = today `subDate` start
+        let periodRelTime = periodToRelTime period
+        assert $ timeSinceStart % periodRelTime == 0
+                 && timeSinceStart / periodRelTime > issued
+        create $ invoice {date = today}
+        create $ this with issued = issued + 1
+        archive self
+        pure ()
+
+-- TODO: Change this for a symmetric process between seller/buyer.
+template PaymentConfirmation
+  with
+    pcInvoice : ContractId Invoice
+    pcParty : Party
+    pcObligor : Party
+  where
+    signatory pcParty
+    observer pcObligor
+
+    nonconsuming choice ArchiveInvoice : ()
+      controller pcObligor
+      do
+        archive pcInvoice
+        archive self
+
+data Currency
+  = CHF
+  | USD deriving (Eq, Show)
+
+data Period
+  = Daily
+  | Monthly
+  | Yearly
+  | Once deriving (Eq, Show)
+
+periodToRelTime : Period -> Int
+periodToRelTime p = case p of
+  Once -> 0
+  Daily -> 1
+  Monthly -> 30
+  Yearly -> 365
+
+
+----------------------------------------------------------------------------------------------------
+-- Triggers
+----------------------------------------------------------------------------------------------------
+
+-- delete paid invoices
+-----------------------
+deleteInvoiceTrigger : T.Trigger ()
+deleteInvoiceTrigger = T.Trigger
+  { initialize = const ()
+  , updateState = \_acs _message () -> ()
+  , rule = deleteInvoiceRule
+  , registeredTemplates = T.RegisteredTemplates
+      [ T.registeredTemplate @Invoice
+      , T.registeredTemplate @PaymentConfirmation
+      ]
+  , heartbeat = None
+  }
+
+deleteInvoiceRule : Party -> T.ACS -> Time -> M.Map T.CommandId [T.Command] -> () -> T.TriggerA ()
+deleteInvoiceRule party acs _now commandsInFlight () = do
+  let invoices = T.getContracts @Invoice acs
+  let confirmations = T.getContracts @PaymentConfirmation acs
+  let ready = do
+              (confirmationCid, PaymentConfirmation{pcInvoice, pcObligor}) <- confirmations
+              (invoiceCid, Invoice{}) <- invoices
+              guard $ invoiceCid == pcInvoice
+              guard $ party == pcObligor
+              pure $ (confirmationCid, invoiceCid)
+  forA_ ready $ \(confirmationCid, invoiceCid) -> T.dedupExercise confirmationCid ArchiveInvoice
+
+-- create recurring invoices
+---------------------------
+issueRecurringInvoiceTrigger : T.Trigger ()
+issueRecurringInvoiceTrigger = T.Trigger
+  { initialize = const ()
+  , updateState = \_acs _message () -> ()
+  , rule = issueRecurringInvoiceRule
+  , registeredTemplates = T.RegisteredTemplates
+      [ T.registeredTemplate @RecurringInvoice
+      ]
+  , heartbeat = None
+  }
+
+issueRecurringInvoiceRule : Party -> T.ACS -> Time -> M.Map T.CommandId [T.Command] -> () -> T.TriggerA ()
+issueRecurringInvoiceRule party acs now commandsInFlight () = do
+  let recurringInvoices = T.getContracts @RecurringInvoice acs
+  let today = toDateUTC now
+  let ready = [cid | (cid, RecurringInvoice{..}) <- recurringInvoices
+                    , let timeSinceStart = today `subDate` start
+                    , let periodRelTime = periodToRelTime period
+                    , timeSinceStart % periodRelTime == 0
+                      && timeSinceStart / periodRelTime > issued ]
+  forA_ ready $ \cid -> T.dedupExercise cid NewInvoice
+
+----------------------------------------------------------------------------------------------------
+-- Initialization
+----------------------------------------------------------------------------------------------------
+
+init : [Party] -> Script ()
+init parties = do
+  forA_ parties $ \p -> do
+    submit p $ createCmd $ User p (show p <> "digitalasset.com") parties
+
+  let p0 = head parties
+  submit p0 $ createCmd $ Channel p0 (p0, "modern_art") parties [] [] "Only the finest modern art"
+  forA_ parties $ \p -> do
+    submit p $ exerciseByKeyCmd @User p $ SubscribeToChannel (p0, "modern_art")
+  let offers =
+        [ NewChannelOffer
+            { channel = (p0, "modern_art")
+            , title = "From this moment despair ends"
+            , description = "Original Banksy, you'll have to take the whole wall."
+            , photoLink = "https://cdn.images.express.co.uk/img/dynamic/1/750x445/1119511.jpg"
+            , currency = USD
+            , price = 5000000
+            , period = Once
+            }
+        , NewChannelOffer
+            { channel = (p0, "modern_art")
+            , title = "Follow your ideas - not"
+            , description = "Coulnd't be more contemporary."
+            , photoLink = "https://cdn.lifehack.org/wp-content/uploads/2014/07/14497_graffiti.jpg"
+            , currency = USD
+            , price = 5000000
+            , period = Once
+            }
+        , NewChannelOffer
+            { channel = (p0, "modern_art")
+            , title = "Basquiat - Philistines"
+            , description = "Found this one in my garage, well preserved."
+            , photoLink = "https://uploads2.wikiart.org/images/jean-michel-basquiat/philistines.jpg"
+            , currency = USD
+            , price = 20000000
+            , period = Once
+            }
+        , NewChannelOffer
+            { channel = (p0, "modern_art")
+            , title = "Basquiat - Profit"
+            , description = "Some things never change, I wish Basquiat would still be alive."
+            , photoLink = "https://uploads8.wikiart.org/images/jean-michel-basquiat/profit-i.jpg"
+            , currency = USD
+            , price = 18000000
+            , period = Once
+            }
+        , NewChannelOffer
+            { channel = (p0, "modern_art")
+            , title = "Pollock - Milly and Olly"
+            , description = "Probably one of the most beautiful Jackson Pollock's"
+            , photoLink = "https://millyandolly.files.wordpress.com/2012/03/img_5970.jpg"
+            , currency = USD
+            , price = 50000000
+            , period = Once
+            }
+        , NewChannelOffer
+            { channel = (p0, "modern_art")
+            , title = "Pollock - Number 1"
+            , description = "The title says it all. This is a superb piece to put on your living room wall"
+            , photoLink = "https://artsy-media-uploads.s3.amazonaws.com/oUMV8dCjL8YtHjG2wtiviA%2Fjackson-pollock-number-1-1949-1949.jpg"
+            , currency = USD
+            , price = 53000000
+            , period = Once
+            }
+        , NewChannelOffer
+            { channel = (p0, "modern_art")
+            , title = "Picasso - Santa Amalia"
+            , description = "Some say he's going to be replaced by AI soon, but I don't think so."
+            , photoLink = "https://1.bp.blogspot.com/-n2kg6Yodlfs/Vr3T0vFPMeI/AAAAAAAAAt4/GwJdSygsCR0/s1600/009.jpg"
+            , currency = USD
+            , price = 34000000
+            , period = Once
+            }
+        , NewChannelOffer
+            { channel = (p0, "modern_art")
+            , title = "Picasso - Guernica"
+            , description = "Probably Picasso's most famous work, a powerful political statement."
+            , photoLink = "http://i.ebayimg.com/images/i/121341829928-0-1/s-l1000.jpg"
+            , currency = USD
+            , price = 119000000
+            , period = Once
+            }
+        , NewChannelOffer
+            { channel = (p0, "modern_art")
+            , title = "Jules de Balincourt- Enlightened Burn Out Tree"
+            , description = "Jules de Balincourt is up and coming, you should check him out."
+            , photoLink = "http://2.bp.blogspot.com/-WscPsJBz1x4/UGXqvz7xd-I/AAAAAAAAD5Q/U-nWh8g9oFU/s1600/JDB_We_And_Me_2012.jpg"
+            , currency = USD
+            , price = 300000
+            , period = Once
+            }
+        , NewChannelOffer
+            { channel = (p0, "modern_art")
+            , title = "Jules de Balincourt- Night Beach"
+            , description = "I don't know the title of this one, but it's just beautiful."
+            , photoLink = "https://www.booooooom.com/wp-content/uploads/2017/06/julesdebalincourt22.jpg"
+            , currency = USD
+            , price = 350000
+            , period = Once
+            }
+        ]
+  forA_ offers $ \offer -> submit p0 $ exerciseByKeyCmd @User p0 offer

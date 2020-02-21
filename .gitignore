@@ -1,0 +1,7 @@
+.daml
+*.log
+node_modules
+navigator.history
+yarn.lock
+ui/src/daml
+daml2ts/*

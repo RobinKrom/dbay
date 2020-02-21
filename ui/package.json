@@ -1,0 +1,85 @@
+{
+  "name": "dbay-ui",
+  "version": "0.0.3",
+  "private": true,
+  "dependencies": {
+    "@babel/core": "7.6.0",
+    "@daml/ledger": "0.13.53",
+    "@daml/react": "0.13.53",
+    "@daml/types": "0.13.53",
+    "@daml2ts/market": "0.13.53",
+    "@reach/router": "^1.2.1",
+    "@svgr/webpack": "4.3.2",
+    "@types/node": "12.7.12",
+    "@types/qrcode.react": "^1.0.0",
+    "@types/react": "16.9.5",
+    "@types/react-dom": "16.9.1",
+    "auth0-js": "^9.12.2",
+    "firebase": "^7.8.2",
+    "fp-ts": "^2.1.1",
+    "react": "^16.10.2",
+    "react-auth-hook": "^1.0.1",
+    "react-dom": "^16.10.2",
+    "react-qrcode-logo": "^2.2.0",
+    "react-scripts": "3.2.0",
+    "react-semantic-toasts": "^0.6.5",
+    "semantic-ui-css": "^2.4.1",
+    "semantic-ui-react": "^0.88.1",
+    "typescript": "3.7.4"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --testURL='http://localhost:7575'",
+    "eject": "react-scripts eject",
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx src/"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "plugin:@typescript-eslint/eslint-recommended",
+      "plugin:@typescript-eslint/recommended",
+      "plugin:@typescript-eslint/recommended-requiring-type-checking"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+      "project": "./tsconfig.json"
+    },
+    "plugins": [
+      "@typescript-eslint"
+    ],
+    "rules": {
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/no-inferrable-types": "off"
+    }
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "proxy": "http://localhost:7575",
+  "devDependencies": {
+    "@babel/plugin-proposal-optional-chaining": "^7.8.3",
+    "@babel/preset-env": "^7.8.4",
+    "@babel/preset-react": "^7.8.3",
+    "@babel/preset-typescript": "^7.8.3",
+    "@types/jwt-simple": "^0.5.33",
+    "@types/reach__router": "^1.2.4",
+    "@typescript-eslint/parser": "^2.6.0",
+    "awesome-typescript-loader": "^5.2.1",
+    "eslint": "^6.6.0",
+    "react-docgen-typescript-loader": "^3.3.0",
+    "react-docgen-typescript-webpack-plugin": "^1.1.0"
+  },
+  "main": "index.js",
+  "license": "MIT"
+}
