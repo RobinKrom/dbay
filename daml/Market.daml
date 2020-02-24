@@ -24,7 +24,7 @@ template OpenRating
     user : Party
     buyer : Party
     title : Text
-    all : [Party]
+    broadcast : Party
   where
     signatory user
 
@@ -34,7 +34,7 @@ template OpenRating
         experience : Text
       controller buyer
           do
-            create $ Rating title user stars experience buyer all
+            create $ Rating title user stars experience buyer broadcast
             archive self
 
 template Rating
@@ -44,16 +44,16 @@ template Rating
     stars : Stars
     experience : Text
     rater : Party
-    all : [Party]
+    broadcast: Party
   where
     signatory rater
-    observer all
+    observer broadcast
 
 template User
   with
     party : Party
     email : Text
-    all : [Party]
+    broadcast: Party
   where
     signatory party
     key party : Party
@@ -132,7 +132,7 @@ template User
                     with
                       chOperator = party
                       chKey = (party, key)
-                      chObservers = all
+                      chObservers = [broadcast]
                       chSubscribers = []
                       chKicked = []
                       chDescription = description
@@ -205,7 +205,7 @@ template Offer
     currency : Currency
     seller : Party
     date : Date
-    all : [Party]
+    broadcast : Party
   where
     signatory seller
     observer observers
@@ -238,7 +238,7 @@ template Offer
                                              -- issued immidiatly
                                }
                       pure ()
-          create $ OpenRating seller tradePartner title all
+          create $ OpenRating seller tradePartner title broadcast
           pure ()
 
 template Invoice
@@ -371,8 +371,9 @@ issueRecurringInvoiceRule party acs now commandsInFlight () = do
 
 init : [Party] -> Script ()
 init parties = do
+  broadcast <- allocateParty "broadcast"
   forA_ parties $ \p -> do
-    submit p $ createCmd $ User p (show p <> "digitalasset.com") parties
+    submit p $ createCmd $ User p (show p <> "digitalasset.com") broadcast
 
   let p0 = head parties
   submit p0 $ createCmd $ Channel p0 (p0, "modern_art") parties [] [] "Only the finest modern art"

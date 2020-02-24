@@ -48,7 +48,7 @@ const MainScreen: React.FC<Props> = (props) => {
   const registerUser = async () => {
     const user = await ledger.lookupByKey(User, party);
     if (user === null) {
-      ledger.create(User, {party: party, email: props.email, all: []});
+      ledger.create(User, {party: party, email: props.email, broadcast: 'broadcast'});
     }
   }
 
