@@ -34,29 +34,29 @@ function AuthCallback({ location }: RouteComponentProps) {
 }
 
 // production
-ReactDOM.render(
-    <AuthProvider
-      navigate={navigate}
-      auth0Domain="dev-8xkawbyi.auth0.com"
-      auth0ClientId="UrF1aclosJz45m6S3t8ztod3BHSMdah1"
-    >
-      <Router>
-        <App default/>
-        <AuthCallback path="/auth_callback"/>
-      </Router>
-      <SemanticToastContainer animation='fly up' />
-    </AuthProvider>,
-    document.getElementById('root')
-);
-
-// development
 // ReactDOM.render(
-      // <>
+    // <AuthProvider
+      // navigate={navigate}
+      // auth0Domain="dev-8xkawbyi.auth0.com"
+      // auth0ClientId="UrF1aclosJz45m6S3t8ztod3BHSMdah1"
+    // >
+      // <Router>
         // <App default/>
-        // <SemanticToastContainer animation='fly up' />
-      // </>,
+        // <AuthCallback path="/auth_callback"/>
+      // </Router>
+      // <SemanticToastContainer animation='fly up' />
+    // </AuthProvider>,
     // document.getElementById('root')
 // );
+
+// development
+ReactDOM.render(
+      <>
+        <App default/>
+        <SemanticToastContainer animation='fly up' />
+      </>,
+    document.getElementById('root')
+);
 
 
 // if (process.env.NODE_ENV === 'development' && module.hot) {
