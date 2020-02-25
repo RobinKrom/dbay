@@ -1,0 +1,13 @@
+sdk-version: 0.13.54
+name: market
+version: 0.1.0
+source: daml
+parties:
+- drsk
+- alice
+- bob
+dependencies:
+- daml-prim
+- daml-stdlib
+- daml-trigger
+- daml-script
