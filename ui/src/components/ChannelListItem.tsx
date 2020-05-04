@@ -1,5 +1,5 @@
 import React from 'react';
-import {Channel} from '@daml2ts/market/lib/market-0.1.0/Market';
+import {Channel} from '@daml.js/market/lib/Market';
 import {List, Divider, Button} from 'semantic-ui-react';
 import {useParty} from '@daml/react';
 

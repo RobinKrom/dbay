@@ -1,6 +1,6 @@
 import React from 'react';
 import {List, Icon, Button} from 'semantic-ui-react';
-import {Invoice} from '@daml2ts/market/lib/market-0.1.0/Market';
+import {Invoice} from '@daml.js/market/lib/Market';
 
 type Props = {
   credit: Invoice;

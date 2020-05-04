@@ -1,19 +1,19 @@
 import React from 'react';
 import {List, Rating} from 'semantic-ui-react';
-import * as market from '@daml2ts/market/lib/market-0.1.0/Market';
+import * as market from '@daml.js/market';
 
 type Props = {
-  rating : market.Rating;
+  rating: market.Market.Rating;
 }
 
 
-export const translateStars = (stars: market.Stars) => {
+export const translateStars = (stars: market.Market.Stars) => {
   switch (stars) {
-    case market.Stars.OneStar: return 1;
-    case market.Stars.TwoStars: return 2;
-    case market.Stars.ThreeStars: return 3;
-    case market.Stars.FourStars: return 4;
-    case market.Stars.FiveStars: return 5;
+    case market.Market.Stars.OneStar: return 1;
+    case market.Market.Stars.TwoStars: return 2;
+    case market.Market.Stars.ThreeStars: return 3;
+    case market.Market.Stars.FourStars: return 4;
+    case market.Market.Stars.FiveStars: return 5;
   };
 };
 

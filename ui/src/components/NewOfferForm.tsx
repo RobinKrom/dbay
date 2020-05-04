@@ -1,29 +1,29 @@
 import React from 'react';
 import {toast} from 'react-semantic-toasts';
 import {Button, Dropdown, Form, FormProps, Input, TextArea, Radio} from 'semantic-ui-react';
-import {useParty, useExerciseByKey} from '@daml/react';
-import * as market from '@daml2ts/market/lib/market-0.1.0/Market';
+import {useParty, useLedger} from '@daml/react';
+import * as market from '@daml.js/market';
 
 type Props = {
     handleCloseForm: () => void;
 };
 
-const NewOfferForm : React.FC<Props> = ({handleCloseForm}) => {
+const NewOfferForm: React.FC<Props> = ({handleCloseForm}) => {
   const party = useParty();
   const [recurring, setRecurring] = React.useState(false)
-  const [currentForm, setState] = React.useState<market.NewOffer>(
+  const [currentForm, setState] = React.useState<market.Market.NewOffer>(
       {title:''
         , description:''
         , photoLink:''
         , price:''
-        , currency: market.Currency.USD
-        , period: market.Period.Once
+        , currency: market.Market.Currency.USD
+        , period: market.Market.Period.Once
         , observers: []}
   );
 
-  const [exerciseNewOffer] = useExerciseByKey(market.User.NewOffer);
+  const ledger = useLedger();
 
-  const onChange = (e:any, {name, value}:any) => {
+  const onChange = (e: any, {name, value}: any) => {
     if (e)
       e.preventDefault()
     if (name === 'client')
@@ -32,11 +32,11 @@ const NewOfferForm : React.FC<Props> = ({handleCloseForm}) => {
       setState({...currentForm, [name]:value})
   };
 
-  const handleSubmit = async (event : React.FormEvent<HTMLElement>, data : FormProps) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLElement>, data: FormProps) => {
     if (event)
       event.preventDefault();
 
-    await exerciseNewOffer(party, currentForm);
+    await ledger.exerciseByKey(market.Market.User.NewOffer, party, currentForm);
     handleCloseForm();
     toast({
       title: 'Success',
@@ -60,11 +60,11 @@ const NewOfferForm : React.FC<Props> = ({handleCloseForm}) => {
   const currencyOptions = [
     {key: 'CHF',
      text: 'CHF',
-     value: market.Currency.CHF
+     value: market.Market.Currency.CHF
     },
     {key: 'USD',
      text: 'USD',
-     value: market.Currency.USD
+     value: market.Market.Currency.USD
     }
   ];
 
@@ -86,15 +86,15 @@ const NewOfferForm : React.FC<Props> = ({handleCloseForm}) => {
   const recurringOptions = [
     {key: 'Daily',
      text: 'Daily',
-     value: market.Period.Daily
+     value: market.Market.Period.Daily
     },
     {key: 'Monthly',
      text: 'Monthly',
-     value: market.Period.Monthly
+     value: market.Market.Period.Monthly
     },
     {key: 'Yearly',
      text: 'Yearly',
-     value: market.Period.Yearly
+     value: market.Market.Period.Yearly
     }
   ];
 

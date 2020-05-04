@@ -1,13 +1,13 @@
 import React from 'react';
 import {List, Grid, Button} from 'semantic-ui-react';
-import {Invoice} from '@daml2ts/market/lib/market-0.1.0/Market';
+import {Invoice} from '@daml.js/market/lib/Market';
 
 type Props = {
-  invoice : Invoice;
-  onPay : () => void;
+  invoice: Invoice;
+  onPay: () => void;
 }
 
-const InvoiceListItem : React.FC<Props> = ({invoice, onPay}) => {
+const InvoiceListItem: React.FC<Props> = ({invoice, onPay}) => {
   return (
     <List.Item>
       <List.Content floated='right'>

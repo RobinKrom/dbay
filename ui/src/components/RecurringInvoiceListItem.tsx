@@ -1,6 +1,6 @@
 import React from 'react';
 import {List, Icon, Button} from 'semantic-ui-react';
-import {RecurringInvoice} from '@daml2ts/market/lib/market-0.1.0/Market';
+import {RecurringInvoice} from '@daml.js/market/lib/Market';
 
 type Props = {
   recInvoice: RecurringInvoice;

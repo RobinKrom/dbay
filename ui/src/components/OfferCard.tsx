@@ -1,10 +1,10 @@
 import React from 'react';
 import { Button, Card, Image } from 'semantic-ui-react';
-import { Offer, Period } from '@daml2ts/market/lib/market-0.1.0/Market';
+import { Offer, Period } from '@daml.js/market/lib/Market';
 import User from './User';
 
 type Props = {
-  offer: Offer
+  offer: Offer;
   handleTakeOffer: () => void;
   gotoUserSummary: (name: string) => void;
 }

@@ -1,8 +1,8 @@
 import React from 'react';
 import {toast} from 'react-semantic-toasts';
 import {Button, Form, FormProps, Input} from 'semantic-ui-react';
-import {useParty, useExerciseByKey} from '@daml/react';
-import * as market from '@daml2ts/market/lib/market-0.1.0/Market';
+import {useParty, useLedger} from '@daml/react';
+import * as market from '@daml.js/market';
 
 type Props = {
   handleCloseForm: () => void;
@@ -11,14 +11,14 @@ type Props = {
 const NewChannelForm: React.FC<Props> = ({handleCloseForm}) => {
 
   const party = useParty();
-  const [exerciseCreateChannel] = useExerciseByKey(market.User.CreateChannel);
-  const [currentForm, setState] = React.useState<market.CreateChannel>(
+  const ledger = useLedger();
+  const [currentForm, setState] = React.useState<market.Market.CreateChannel>(
     { key:''
     , description:''
     }
   );
 
-  const handleChange = (e:any, {name, value}:any) => {
+  const handleChange = (e: any, {name, value}: any) => {
     if (e)
       e.preventDefault()
     setState({...currentForm, [name]:value})
@@ -27,7 +27,7 @@ const NewChannelForm: React.FC<Props> = ({handleCloseForm}) => {
     if (event)
       event.preventDefault();
 
-    await exerciseCreateChannel(party, currentForm);
+    await ledger.exerciseByKey(market.Market.User.CreateChannel, party, currentForm);
     handleCloseForm();
     toast({
       title: 'Success',

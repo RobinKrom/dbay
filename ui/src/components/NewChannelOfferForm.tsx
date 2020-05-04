@@ -1,17 +1,17 @@
 import React from 'react';
 import {toast} from 'react-semantic-toasts';
-import {Button, Dropdown, Form, FormProps, Input, TextArea, Radio} from 'semantic-ui-react';
-import {useParty, useExerciseByKey} from '@daml/react';
-import * as market from '@daml2ts/market/lib/market-0.1.0/Market';
+import {Button, Dropdown, Form, Input, TextArea, Radio} from 'semantic-ui-react';
+import {useParty, useLedger} from '@daml/react';
+import * as market from '@daml.js/market';
 
 type Props = {
-    handleCloseForm: () => void
+    handleCloseForm: () => void;
 };
 
-const NewChannelOfferForm : React.FC<Props> = ({handleCloseForm}) => {
+const NewChannelOfferForm: React.FC<Props> = ({handleCloseForm}) => {
   const party = useParty();
   const [recurring, setRecurring] = React.useState(false)
-  const [currentForm, setState] = React.useState<market.NewChannelOffer>(
+  const [currentForm, setState] = React.useState<market.Market.NewChannelOffer>(
       { channel:{_1: 'NO OPERATOR'
                 , _2: 'NO KEY'
                 }
@@ -19,14 +19,14 @@ const NewChannelOfferForm : React.FC<Props> = ({handleCloseForm}) => {
       , description:''
       , photoLink:'no photo'
       , price:''
-      , currency: market.Currency.USD
-      , period: market.Period.Once
+      , currency: market.Market.Currency.USD
+      , period: market.Market.Period.Once
       }
   );
 
-  const [exerciseNewChannelOffer] = useExerciseByKey(market.User.NewChannelOffer);
+  const ledger = useLedger();
 
-  const onChange = (e:any, {name, value}:any) => {
+  const onChange = (e: any, {name, value}: any) => {
     if (e)
       e.preventDefault()
     if (name === 'operator')
@@ -37,11 +37,11 @@ const NewChannelOfferForm : React.FC<Props> = ({handleCloseForm}) => {
       setState({...currentForm, [name]:value})
   };
 
-  const handleSubmit = async (event : React.FormEvent<HTMLElement>, data : FormProps) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLElement>) => {
     if (event)
       event.preventDefault();
 
-    await exerciseNewChannelOffer(party, currentForm);
+    await ledger.exerciseByKey(market.Market.User.NewChannelOffer, party, currentForm);
     handleCloseForm();
     toast({
       title: 'Success',
@@ -90,15 +90,15 @@ const NewChannelOfferForm : React.FC<Props> = ({handleCloseForm}) => {
   const recurringOptions = [
     {key: 'Daily',
      text: 'Daily',
-     value: market.Period.Daily
+     value: market.Market.Period.Daily
     },
     {key: 'Monthly',
      text: 'Monthly',
-     value: market.Period.Monthly
+     value: market.Market.Period.Monthly
     },
     {key: 'Yearly',
      text: 'Yearly',
-     value: market.Period.Yearly
+     value: market.Market.Period.Yearly
     }
   ];
 

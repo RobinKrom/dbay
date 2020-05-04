@@ -1,11 +1,11 @@
 import React from 'react';
 import {toast} from 'react-semantic-toasts';
 import {List, Divider, Button, Modal, Segment} from 'semantic-ui-react';
-import {useParty, useExerciseByKey, useStreamQuery} from '@daml/react';
-import {Tuple2} from '@daml2ts/market/src/40f452260bef3f29dede136108fc08a88d5a5250310281067087da6f0baddff7/DA/Types';
-import * as market from '@daml2ts/market/lib/market-0.1.0/Market';
+import {useParty, useLedger, useStreamQuery} from '@daml/react';
+import * as market from '@daml.js/market';
 import ChannelListItem from './ChannelListItem';
 import NewChannelForm from './NewChannelForm';
+import {Tuple2} from '@daml.js/40f452260bef3f29dede136108fc08a88d5a5250310281067087da6f0baddff7/lib/DA/Types/index'
 
 type Props = {
   newChannelFormOpen: boolean;
@@ -15,11 +15,10 @@ type Props = {
 
 const ChannelList: React.FC<Props> = (props) => {
   const party = useParty();
-  const channels = useStreamQuery(market.Channel, () => ({}), [party]);
-  const [exerciseSubscribeToChannel] = useExerciseByKey(market.User.SubscribeToChannel);
-  const [exerciseUnsubscribeFromChannel] = useExerciseByKey(market.User.UnsubscribeFromChannel);
+  const channels = useStreamQuery(market.Market.Channel, () => ({}), [party]);
+  const ledger = useLedger()
   const handleSubscribeToChannel = async (channelKey: Tuple2<string, string>) => {
-    await exerciseSubscribeToChannel(party, {channelKey});
+    await ledger.exerciseByKey(market.Market.User.SubscribeToChannel, party, {channelKey});
     toast({
       title: 'Success',
       type: 'success',
@@ -28,7 +27,7 @@ const ChannelList: React.FC<Props> = (props) => {
     });
   };
   const handleUnsubscribeFromChannel = async (channelKey: Tuple2<string, string>) => {
-    await exerciseUnsubscribeFromChannel(party, {channelKey});
+    await ledger.exerciseByKey(market.Market.User.UnsubscribeFromChannel, party, {channelKey});
     toast({
       title: 'Success',
       type: 'success',

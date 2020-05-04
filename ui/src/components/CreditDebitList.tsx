@@ -3,19 +3,18 @@ import {List, Grid, Segment} from 'semantic-ui-react';
 import InvoiceListItem from './InvoiceListItem';
 import RecurringInvoiceListItem from './RecurringInvoiceListItem';
 import CreditListItem from './CreditListItem';
-import * as market from '@daml2ts/market/lib/market-0.1.0/Market';
+import * as market from '@daml.js/market';
 import {toast} from 'react-semantic-toasts'
-import {useParty, useStreamQuery, useExerciseByKey} from '@daml/react';
+import {useParty, useStreamQuery, useLedger} from '@daml/react';
 
 const CreditDebitList: React.FC = () => {
   const party = useParty();
-  const invoices = useStreamQuery(market.Invoice, () => ({obligor: party}), [party]);
-  const credits = useStreamQuery(market.Invoice, () => ({owner: party}), [party]);
-  const recurring = useStreamQuery(market.RecurringInvoice, () => ({invoice: {owner: party}}), [party]);
-  const [exerciseConfirmPayment] = useExerciseByKey(market.User.ConfirmPayment);
-  const [exerciseCancelRecurringInvoice] = useExerciseByKey(market.User.CancelRecurringInvoice);
+  const invoices = useStreamQuery(market.Market.Invoice, () => ({obligor: party}), [party]);
+  const credits = useStreamQuery(market.Market.Invoice, () => ({owner: party}), [party]);
+  const recurring = useStreamQuery(market.Market.RecurringInvoice, () => ({invoice: {owner: party}}), [party]);
+  const ledger = useLedger();
   const handleConfirmPayment = async (contractId: string) => {
-    await exerciseConfirmPayment(party, {invoice: contractId});
+    await ledger.exerciseByKey(market.Market.User.ConfirmPayment, party, {invoice: contractId});
     toast({
       title: 'Success',
       type: 'success',
@@ -24,7 +23,7 @@ const CreditDebitList: React.FC = () => {
     });
     }
   const handleCancelRecurringInvoice = async(contractId: string) => {
-    await exerciseCancelRecurringInvoice(party, {recInvoice: contractId});
+    await ledger.exerciseByKey(market.Market.User.CancelRecurringInvoice, party, {recInvoice: contractId});
     toast({
       title: 'Success',
       type: 'success',

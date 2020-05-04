@@ -1,5 +1,1 @@
-{
-  "drsk": "drsk",
-  "alice": "Alice",
-  "bob": "Bob"
-}
+["drsk", "alice", "bob"]

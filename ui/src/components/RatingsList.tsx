@@ -2,13 +2,13 @@ import React from 'react';
 import {List, Grid, Segment} from 'semantic-ui-react';
 import RatingItem from './RatingItem';
 import OpenRatingItem from './OpenRatingItem';
-import * as market from '@daml2ts/market/lib/market-0.1.0/Market';
+import * as market from '@daml.js/market';
 import {useParty, useStreamQuery} from '@daml/react';
 
 const RatingsList: React.FC = () => {
   const party = useParty();
-  const ratings = useStreamQuery(market.Rating, () => ({user: party}), [party]);
-  const openRatings = useStreamQuery(market.OpenRating, () => ({buyer: party}), [party]);
+  const ratings = useStreamQuery(market.Market.Rating, () => ({user: party}), [party]);
+  const openRatings = useStreamQuery(market.Market.OpenRating, () => ({buyer: party}), [party]);
   return (
     <Segment>
       <Grid columns={2}>

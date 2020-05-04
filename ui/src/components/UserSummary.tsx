@@ -1,7 +1,7 @@
 import React from 'react';
 import {Party} from '@daml/types';
 import {useStreamQuery} from '@daml/react';
-import * as market from '@daml2ts/market/lib/market-0.1.0/Market';
+import * as market from '@daml.js/market';
 import {List, Grid, Segment, Statistic} from 'semantic-ui-react';
 import RatingItem, {translateStars} from './RatingItem';
 import {average} from './User';
@@ -11,7 +11,7 @@ type Props = {
 };
 
 const UserSummary: React.FC<Props> = ({name}) => {
-  const ratings = useStreamQuery(market.Rating, () => ({user: name}), [name]);
+  const ratings = useStreamQuery(market.Market.Rating, () => ({user: name}), [name]);
   const avg = average(ratings.contracts.map(x => translateStars(x.payload.stars)));
   return(
     <Segment>

@@ -10,7 +10,7 @@ import QRCodeModal from './QRCodeModal';
 import RatingsList from './RatingsList';
 import UserSummary from './UserSummary';
 import Ledger from '@daml/ledger';
-import { User } from '@daml2ts/market/lib/market-0.1.0/Market';
+import { User } from '@daml.js/market/lib/Market';
 
 type Props = {
   handleLogOut: () => void;
@@ -46,16 +46,15 @@ const MainScreen: React.FC<Props> = (props) => {
 
   const ledger = new Ledger({token: props.token});
   const registerUser = async () => {
-    const user = await ledger.lookupByKey(User, party);
+    const user = await ledger.fetchByKey(User, party);
     if (user === null) {
-      ledger.create(User, {party: party, email: props.email, broadcast: 'broadcast'});
+      await ledger.create(User, {party: party, email: props.email, broadcast: 'broadcast'});
     }
   }
 
   useEffect(() => {
     registerUser();
-  }
-  , [party]);
+  });
 
   const branchView = (props: Props) => {
     switch (props.activeView.kind) {

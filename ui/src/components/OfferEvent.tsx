@@ -1,9 +1,9 @@
 import React from 'react';
 import {Feed, Icon, Grid} from 'semantic-ui-react';
-import { Offer } from '@daml2ts/market/lib/market-0.1.0/Market';
+import { Offer } from '@daml.js/market/lib/Market';
 
 type Props = {
-  offer: Offer
+  offer: Offer;
   handleTakeOffer: () => void;
 }
 

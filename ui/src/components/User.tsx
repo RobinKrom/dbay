@@ -1,5 +1,5 @@
 import React from 'react';
-import * as market from '@daml2ts/market/lib/market-0.1.0/Market';
+import * as market from '@daml.js/market';
 import {useStreamQuery} from '@daml/react';
 import {translateStars} from './RatingItem';
 import {Icon} from 'semantic-ui-react';
@@ -14,7 +14,7 @@ export const average = (xs: number[]): number => {
 };
 
 const User: React.FC<Props> = ({name, gotoUserSummary}) => {
-  const ratings = useStreamQuery(market.Rating, () => ({user: name}), [name])
+  const ratings = useStreamQuery(market.Market.Rating, () => ({user: name}), [name])
   const averageRating: number = average(ratings.contracts.map(x => translateStars(x.payload.stars)));
   return (
     <div
